@@ -1,0 +1,15 @@
+# Starter list - trim or extend as the team decides
+numpy
+pandas
+scikit-learn
+xgboost
+opencv-python
+tensorflow        # or torch + torchvision, pick one for the image model
+fair-esm          # protein language model embeddings (ESM)
+biopython         # UniProt / PDB access
+requests
+spacy             # NLP for evidence extraction
+fastapi
+uvicorn[standard]
+python-multipart
+pytest

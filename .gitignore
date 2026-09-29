@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+.env
+
+# Node
+node_modules/
+frontend/build/
+frontend/dist/
+
+# Data and trained models (large files - share via Google Drive / Git LFS instead)
+data/raw/**
+data/processed/**
+models/**
+!**/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
