@@ -24,6 +24,4 @@ pip install -r requirements.txt
 uvicorn backend.app.main:app --reload
 ```
 
-## Team workflow
-- Never commit directly to `main`. Work on `feature/<module>-<name>` branches and open a pull request.
-- Large data and trained models are git-ignored; share them via a shared drive.
+
