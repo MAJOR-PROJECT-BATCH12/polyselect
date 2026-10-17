@@ -1,25 +1,48 @@
 /* ==========================================================
    api.js  -  talks to the backend.
 
-   DESIGN PHASE: analyzeImage() returns SAMPLE data after a short
-   delay so the interface can be built and reviewed without the
-   ML models. The numbers below are placeholders for the UI only.
+   DESIGN PHASE: both functions return SAMPLE data after a short
+   delay, so the interface can be built and reviewed without the
+   ML models. The values below are placeholders for the UI only.
+   The three PET studies are from the project literature survey.
 
-   LATER: replace the body of analyzeImage() with a real fetch()
-   to the FastAPI backend (see the commented block). Keep the
-   returned object in the same shape and main.js needs no change.
+   LATER: replace the body of each function with a real fetch()
+   (see the commented blocks). Keep the returned object in the
+   same shape and main.js needs no change.
    ========================================================== */
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
 /* Shape of one result:
    {
-     plastic:    { code, abbr, name, found, confidence },   // Model 1
-     enzymes:    [ { name, score }, ... ],                  // Model 2, best first
+     plastic:    { code, abbr, name, found, confidence },   // confidence is null when the user picked the plastic
+     enzymes:    [ { name, score }, ... ],                  // best first
      topReason:  "short sentence",
-     conditions: { temperature, ph, hours, degradation }    // Model 2
+     conditions: { temperature, ph, hours, degradation },
+     evidence:   [ { title, authors, year, finding }, ... ] // may be empty
    }
 */
+const PET_EVIDENCE = [
+  {
+    title: "An Engineered PET Depolymerase to Break Down and Recycle Plastic Bottles",
+    authors: "Tournier, Topham, Gilles et al.",
+    year: 2020,
+    finding: "An engineered PET hydrolase broke down at least 90% of PET within 10 hours."
+  },
+  {
+    title: "Machine Learning-aided Engineering of Hydrolases for PET Depolymerization",
+    authors: "Lu, Diaz et al.",
+    year: 2022,
+    finding: "Machine learning guided the design of FAST-PETase, which was more active and more stable than the original enzyme."
+  },
+  {
+    title: "Enhancing PET Degrading Enzymes: A Combinatory Approach",
+    authors: "Joho, Royan, Caputo et al.",
+    year: 2024,
+    finding: "Combi-PETase melts at about 70 °C and works best around 60 °C."
+  }
+];
+
 const SAMPLE_RESULTS = {
   PET: {
     plastic: { code: 1, abbr: "PET", name: "Polyethylene terephthalate", found: "Drink bottles, food trays, packaging film", confidence: 0.94 },
@@ -29,7 +52,8 @@ const SAMPLE_RESULTS = {
       { name: "IsPETase", score: 0.61 }
     ],
     topReason: "Engineered PET hydrolase with the highest suitability score for PET.",
-    conditions: { temperature: 72, ph: 8.0, hours: 10, degradation: 90 }
+    conditions: { temperature: 72, ph: 8.0, hours: 10, degradation: 90 },
+    evidence: PET_EVIDENCE
   },
   HDPE: {
     plastic: { code: 2, abbr: "HDPE", name: "High-density polyethylene", found: "Milk jugs, detergent bottles, pipes", confidence: 0.91 },
@@ -39,7 +63,8 @@ const SAMPLE_RESULTS = {
       { name: "Manganese peroxidase", score: 0.44 }
     ],
     topReason: "Best available match. Polyethylene breaks down slowly, so expect a low percentage.",
-    conditions: { temperature: 37, ph: 6.0, hours: 240, degradation: 8 }
+    conditions: { temperature: 37, ph: 6.0, hours: 240, degradation: 8 },
+    evidence: []
   },
   PVC: {
     plastic: { code: 3, abbr: "PVC", name: "Polyvinyl chloride", found: "Pipes, cable insulation, window frames", confidence: 0.88 },
@@ -49,7 +74,8 @@ const SAMPLE_RESULTS = {
       { name: "Manganese peroxidase", score: 0.33 }
     ],
     topReason: "Best available match. PVC is hard to degrade and the evidence is limited.",
-    conditions: { temperature: 30, ph: 5.0, hours: 720, degradation: 4 }
+    conditions: { temperature: 30, ph: 5.0, hours: 720, degradation: 4 },
+    evidence: []
   },
   LDPE: {
     plastic: { code: 4, abbr: "LDPE", name: "Low-density polyethylene", found: "Carrier bags, cling film, squeezable bottles", confidence: 0.9 },
@@ -59,7 +85,8 @@ const SAMPLE_RESULTS = {
       { name: "Manganese peroxidase", score: 0.41 }
     ],
     topReason: "Best available match for thin polyethylene film.",
-    conditions: { temperature: 35, ph: 6.5, hours: 336, degradation: 10 }
+    conditions: { temperature: 35, ph: 6.5, hours: 336, degradation: 10 },
+    evidence: []
   },
   PP: {
     plastic: { code: 5, abbr: "PP", name: "Polypropylene", found: "Food containers, bottle caps, straws", confidence: 0.92 },
@@ -69,7 +96,8 @@ const SAMPLE_RESULTS = {
       { name: "Alkane hydroxylase (AlkB)", score: 0.38 }
     ],
     topReason: "Best available match. Polypropylene resists enzymes, so expect a low percentage.",
-    conditions: { temperature: 37, ph: 5.5, hours: 480, degradation: 6 }
+    conditions: { temperature: 37, ph: 5.5, hours: 480, degradation: 6 },
+    evidence: []
   },
   PS: {
     plastic: { code: 6, abbr: "PS", name: "Polystyrene", found: "Disposable cups, foam trays, packaging foam", confidence: 0.89 },
@@ -79,7 +107,8 @@ const SAMPLE_RESULTS = {
       { name: "Peroxidase", score: 0.35 }
     ],
     topReason: "Best available match for polystyrene.",
-    conditions: { temperature: 30, ph: 5.5, hours: 504, degradation: 7 }
+    conditions: { temperature: 30, ph: 5.5, hours: 504, degradation: 7 },
+    evidence: []
   }
 };
 
@@ -96,17 +125,36 @@ function pickSampleCode(fileName) {
   return SAMPLE_ORDER[sum % SAMPLE_ORDER.length];
 }
 
+/* Mode 1: the user uploads a photo (and optionally a brand or product). */
 async function analyzeImage(file, productName) {
   // ---- DESIGN PHASE (sample data) ----
-  await sleep(2200);
+  await sleep(3000);
   return SAMPLE_RESULTS[pickSampleCode(file.name)];
 
   // ---- LATER: real backend call. Delete the two lines above and use this. ----
   // const body = new FormData();
   // body.append("image", file);
   // if (productName) body.append("product", productName);
-  //
   // const response = await fetch(`${API_BASE_URL}/api/analyze`, { method: "POST", body });
   // if (!response.ok) throw new Error("The server could not analyse this photo.");
+  // return await response.json();
+}
+
+/* Mode 2: the user already knows the plastic. code is one of SAMPLE_ORDER, e.g. "PET". */
+async function analyzeKnownPlastic(code) {
+  // ---- DESIGN PHASE (sample data) ----
+  await sleep(2200);
+  const sample = SAMPLE_RESULTS[code];
+  if (!sample) throw new Error("Unknown plastic type.");
+  // No photo was analysed, so there is no confidence value.
+  return { ...sample, plastic: { ...sample.plastic, confidence: null } };
+
+  // ---- LATER: real backend call. Delete the lines above and use this. ----
+  // const response = await fetch(`${API_BASE_URL}/api/recommend`, {
+  //   method: "POST",
+  //   headers: { "Content-Type": "application/json" },
+  //   body: JSON.stringify({ plastic: code })
+  // });
+  // if (!response.ok) throw new Error("The server could not find a recommendation.");
   // return await response.json();
 }

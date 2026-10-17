@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PolySelect: find the enzyme for your plastic</title>
-  <meta name="description" content="Upload a photo of a plastic item. PolySelect identifies the plastic and recommends an enzyme and the conditions to degrade it.">
+  <meta name="description" content="Upload a photo of a plastic item, or pick the plastic type. PolySelect recommends an enzyme and the conditions to degrade it.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,28 +14,38 @@
 <body>
 
   <header class="site-header">
-    <a class="brand" href="index.html" aria-label="PolySelect home">
-      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
-        <path d="M20 5 L36 33 H4 Z" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round"/>
-        <circle cx="20" cy="25" r="4.2" fill="var(--enzyme)"/>
-      </svg>
-      <span>PolySelect</span>
-    </a>
+    <div class="header-inner">
+      <a class="brand" href="index.html" aria-label="PolySelect home">
+        <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+          <path d="M20 5 L36 33 H4 Z" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round"/>
+          <circle cx="20" cy="25" r="4.2" fill="var(--enzyme)"/>
+        </svg>
+        <span>PolySelect</span>
+      </a>
+      <nav aria-label="Page sections">
+        <a href="#tool">Try it</a>
+        <a href="#how">How it works</a>
+      </nav>
+    </div>
   </header>
 
   <main>
     <section class="intro">
-      <h1>Photograph a plastic item. Get the enzyme and conditions to break it down.</h1>
-      <p>PolySelect identifies the type of plastic from your photo, then recommends an enzyme, the temperature and pH to use, how long it takes, and how much should degrade.</p>
+      <h1>Find the enzyme that can break down your plastic.</h1>
+      <p>Photograph a plastic item, or choose the plastic type if you already know it. PolySelect recommends an enzyme, the temperature and pH to use, how long it takes, and how much should degrade.</p>
     </section>
 
-    <div class="workspace">
+    <section class="workspace" id="tool" aria-label="Enzyme finder">
 
-      <!-- Left: upload -->
-      <section class="panel upload" aria-labelledby="upload-title">
-        <h2 id="upload-title">Your plastic item</h2>
+      <!-- Left: input -->
+      <div class="panel">
+        <div class="tabs" role="tablist" aria-label="How do you want to start?">
+          <button type="button" role="tab" id="tab-photo" class="tab is-active" aria-selected="true" aria-controls="panel-photo">Upload a photo</button>
+          <button type="button" role="tab" id="tab-known" class="tab" aria-selected="false" aria-controls="panel-known" tabindex="-1">I know the plastic</button>
+        </div>
 
-        <form id="analyzeForm" novalidate>
+        <!-- Photo mode -->
+        <form id="panel-photo" class="tabpanel" role="tabpanel" aria-labelledby="tab-photo" novalidate>
           <input type="file" id="imageInput" class="visually-hidden" accept="image/png,image/jpeg,image/webp">
 
           <label class="dropzone" id="dropzone" for="imageInput">
@@ -55,49 +65,77 @@
 
           <div class="field">
             <label for="productInput">Brand or product <span class="optional">(optional)</span></label>
-            <input type="text" id="productInput" name="product" maxlength="80" autocomplete="off" placeholder="For example: 1 L water bottle">
+            <input type="text" id="productInput" maxlength="80" autocomplete="off" placeholder="For example: 1 L water bottle">
             <p class="hint">Helps confirm the material when the photo is unclear.</p>
           </div>
 
           <div class="actions">
-            <button type="submit" class="btn btn-primary" id="analyzeBtn" disabled>Find enzyme</button>
-            <button type="button" class="btn btn-quiet" id="resetBtn" hidden>Start over</button>
+            <button type="submit" class="btn btn-primary" id="photoBtn" disabled>Find enzyme</button>
+            <button type="button" class="btn btn-quiet" id="photoReset" hidden>Start over</button>
           </div>
         </form>
-      </section>
+
+        <!-- Known-plastic mode -->
+        <form id="panel-known" class="tabpanel" role="tabpanel" aria-labelledby="tab-known" hidden novalidate>
+          <fieldset class="picker">
+            <legend>Which plastic is it?</legend>
+            <p class="hint" id="pickerHint">The number is the recycling code, usually stamped on the bottom of the item.</p>
+            <div class="picker-grid" id="plasticOptions"></div>
+          </fieldset>
+
+          <div class="actions">
+            <button type="submit" class="btn btn-primary" id="knownBtn" disabled>Find enzyme</button>
+            <button type="button" class="btn btn-quiet" id="knownReset" hidden>Clear</button>
+          </div>
+        </form>
+      </div>
 
       <!-- Right: results -->
       <section class="results" id="results" aria-live="polite" aria-labelledby="results-title">
         <h2 id="results-title" class="visually-hidden">Results</h2>
 
-        <!-- Empty -->
         <div class="empty" id="emptyState">
           <h3>Your results will appear here</h3>
-          <p>Add a photo and select Find enzyme. PolySelect will:</p>
+          <p>Add a photo or choose a plastic, then select Find enzyme. PolySelect will:</p>
           <ol class="steps">
-            <li><strong>Identify the plastic</strong> from the photo, with a confidence level.</li>
+            <li><strong>Identify the plastic</strong> from the photo, with a confidence level. Skipped if you choose the plastic yourself.</li>
             <li><strong>Recommend an enzyme</strong> and rank the other options.</li>
             <li><strong>Set the conditions</strong>: temperature, pH, time and expected degradation.</li>
+            <li><strong>Show the research</strong> that supports the recommendation.</li>
           </ol>
         </div>
 
-        <!-- Loading -->
         <div class="loading" id="loadingState" hidden>
-          <div class="spinner" aria-hidden="true"></div>
-          <p id="loadingText">Identifying the plastic…</p>
+          <ul class="progress" id="progressList"></ul>
         </div>
 
-        <!-- Error -->
         <div class="error-box" id="errorState" role="alert" hidden>
-          <h3>We could not analyse this photo</h3>
+          <h3>We could not complete this search</h3>
           <p id="errorText">Check your connection and try again.</p>
         </div>
 
-        <!-- Result (filled by js/main.js) -->
         <div id="resultState" hidden></div>
       </section>
+    </section>
 
-    </div>
+    <section class="how" id="how" aria-labelledby="how-title">
+      <h2 id="how-title">How PolySelect works</h2>
+      <ol class="how-list">
+        <li>
+          <h3>Identify</h3>
+          <p>An image model looks at your photo and names the plastic. If you already know it, choose it and skip this step.</p>
+        </li>
+        <li>
+          <h3>Recommend</h3>
+          <p>A second model ranks enzymes for that plastic and predicts the temperature, pH and time that work best.</p>
+        </li>
+        <li>
+          <h3>Support</h3>
+          <p>Each recommendation links to published studies, so you can check the evidence before you plan an experiment.</p>
+        </li>
+      </ol>
+      <p class="disclaimer">PolySelect helps you plan experiments. Always confirm a recommendation in the lab before relying on it.</p>
+    </section>
   </main>
 
   <footer class="site-footer">
