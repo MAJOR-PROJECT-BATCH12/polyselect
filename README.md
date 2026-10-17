@@ -9,19 +9,15 @@ Image -> Plastic type -> Enzyme ranking -> Degradation conditions -> Evidence
 | Module | Folder | Objective |
 |---|---|---|
 | Plastic identification (OpenCV + CNN) | `ml/plastic_classification` | 1 |
-| Enzyme recommendation (PLM + ML) | `ml/enzyme_recommendation` | 2 |
-| Condition prediction (RF / XGBoost) | `ml/condition_prediction` | 3 |
+| Enzyme recommendation | `ml/enzyme_recommendation` | 2 |
+| Condition prediction | `ml/condition_prediction` | 3 |
 | Evidence retrieval (NLP + knowledge DB) | `ml/evidence_retrieval` | 4 |
 | Enzyme-condition ranking | `ml/ranking` | 5 |
 | REST API | `backend/` | - |
-| Web UI | `frontend/` | - |
+| Web interface (HTML/CSS/JS) | `frontend/` | - |
 
-## Setup (Windows)
-```
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn backend.app.main:app --reload
-```
+## Run the frontend
+Open `frontend/index.html` with the VS Code Live Server extension.
+Results are sample values until the backend is connected.
 
-
+## Run the backend
